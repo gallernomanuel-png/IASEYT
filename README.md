@@ -24,8 +24,8 @@ simulación, con plata de mentira.** Las especificaciones están en
 Necesitás Python 3.11 o más nuevo.
 
 ```bash
-git clone https://github.com/gallernomanuel-png/IASEYT.git
-cd IASEYT
+git clone https://github.com/gallernomanuel-png/IASEYT-Beta-Propio.git
+cd IASEYT-Beta-Propio
 python -m venv .venv
 # Windows: .venv\Scripts\activate     Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
