@@ -1,0 +1,31 @@
+# Configuración de IASEYT. Copiá este archivo como config.toml y cambiá lo que quieras.
+# Nunca pongas claves ni contraseñas acá: van en variables de entorno.
+
+[general]
+capital_inicial = 1000000.0          # pesos (simulación)
+ruta_db = "iaseyt.db"
+minutos_para_responder = 30          # modo asistido: después se descarta la propuesta
+# pasar_a_auto_tras_minutos = 120    # si no abrís el panel en ese tiempo, pasa a automático
+segundos_por_ciclo = 60
+
+[limites]                            # fracciones del valor total de la cuenta
+max_por_empresa = 0.10
+max_por_sector = 0.25
+perdida_max_diaria = 0.03
+caida_max_desde_pico = 0.15
+efectivo_minimo = 0.20
+
+[filtros]
+prob_minima = 0.60
+min_fuentes_noticia = 2
+min_fuentes_tecnica = 1
+min_precedentes = 8
+umbral_perdida = 0.05
+max_prob_perdida = 0.15
+volumen_minimo_diario = 50000000.0   # pesos
+fraccion_kelly = 0.25
+caminos_montecarlo = 10000
+
+[costos]                             # por operación (ida o vuelta)
+comision = 0.005
+deslizamiento = 0.002

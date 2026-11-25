@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IASEYT</title>
+<style>
+  :root { --fondo:#f6f7f9; --carta:#fff; --texto:#1b1f24; --suave:#5b6470; --borde:#dde1e6;
+          --acento:#1f6feb; --bien:#1a7f37; --mal:#cf222e; --aviso:#9a6700; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo:#0d1117; --carta:#161b22; --texto:#e6edf3; --suave:#8b949e; --borde:#30363d;
+            --acento:#4493f8; --bien:#3fb950; --mal:#f85149; --aviso:#d29922; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--fondo); color:var(--texto); }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; margin:0; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  .carta { background:var(--carta); border:1px solid var(--borde); border-radius:10px; padding:14px; margin:12px 0; }
+  .fila { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .entre { justify-content:space-between; }
+  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--borde); background:var(--carta); color:var(--texto); cursor:pointer; }
+  button.principal { background:var(--acento); border-color:var(--acento); color:#fff; }
+  button.peligro { border-color:var(--mal); color:var(--mal); }
+  button:disabled { opacity:.45; cursor:default; }
+  .insignia { padding:3px 10px; border-radius:99px; font-weight:600; font-size:13px; border:1px solid currentColor; }
+  .encendida { color:var(--bien); } .pausada { color:var(--aviso); } .apagada { color:var(--suave); }
+  .suave { color:var(--suave); font-size:13px; }
+  .grande { font-size:24px; font-weight:650; }
+  .pos { color:var(--bien); } .neg { color:var(--mal); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--borde); vertical-align:top; }
+  th { color:var(--suave); font-weight:500; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  input[type=number], input[type=password] { font:inherit; padding:7px 10px; border-radius:8px; border:1px solid var(--borde); background:var(--fondo); color:var(--texto); width:170px; }
+  .aviso { color:var(--aviso); }
+  .oculto { display:none; }
+  ul { margin:6px 0; padding-left:20px; }
+  .tabla { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <div class="fila entre">
+    <h1>IASEYT</h1>
+    <span id="estado" class="insignia apagada">...</span>
+  </div>
+  <p class="suave">Fase 1: simulación con plata de mentira. La estrategia es de prueba.</p>
+
+  <section id="acceso" class="carta oculto">
+    <h2>Entrar</h2>
+    <div class="fila">
+      <input id="token" type="password" placeholder="Token de acceso">
+      <button class="principal" onclick="guardarToken()">Entrar</button>
+    </div>
+    <p class="suave">El token aparece en la consola cuando arrancás el servidor.</p>
+  </section>
+
+  <div id="app" class="oculto">
+    <section id="resumen" class="carta oculto"></section>
+
+    <section class="carta">
+      <div class="fila entre">
+        <div>
+          <div class="suave">Valor de la cuenta</div>
+          <div id="valor" class="grande">-</div>
+          <div id="detalle" class="suave"></div>
+        </div>
+        <div class="fila">
+          <span class="suave">Modo</span>
+          <button id="b-asistido" onclick="modo('asistido')">Asistido</button>
+          <button id="b-automatico" onclick="modo('automatico')">Automático</button>
+        </div>
+      </div>
+      <div class="fila" style="margin-top:12px">
+        <button id="b-encender" class="principal" onclick="boton('encender')">Encender</button>
+        <button id="b-pausar" onclick="boton('pausar')">Pausar</button>
+        <button id="b-reanudar" onclick="reanudar()">Reanudar</button>
+        <button id="b-apagar" onclick="apagar()">Apagar</button>
+        <button class="peligro" onclick="cerrarTodo()">Cerrar todo</button>
+      </div>
+      <p id="mensaje" class="aviso"></p>
+    </section>
+
+    <section class="carta">
+      <h2>Propuestas para vos</h2>
+      <div id="propuestas" class="suave">No hay propuestas pendientes.</div>
+    </section>
+
+    <section class="carta">
+      <h2>Posiciones abiertas</h2>
+      <div class="tabla"><table id="posiciones"></table></div>
+    </section>
+
+    <section class="carta">
+      <h2>Historial de operaciones</h2>
+      <div class="tabla"><table id="operaciones"></table></div>
+    </section>
+
+    <section class="carta">
+      <h2>Qué estuvo haciendo</h2>
+      <div class="tabla"><table id="eventos"></table></div>
+    </section>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const pesos = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+const pct = (n) => (n >= 0 ? '+' : '') + (n * 100).toFixed(1).replace('.', ',') + '%';
+let foto = null;
+
+function guardarTokenDeUrl() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('token')) {
+    try { localStorage.setItem('iaseyt_token', p.get('token')); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+  }
+}
+function token() { try { return localStorage.getItem('iaseyt_token') || ''; } catch (e) { return ''; } }
+function guardarToken() {
+  try { localStorage.setItem('iaseyt_token', $('token').value.trim()); } catch (e) {}
+  iniciar();
+}
+
+async function api(metodo, ruta, cuerpo) {
+  const r = await fetch(ruta, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json', 'X-Token': token() },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+  });
+  if (r.status === 401) { $('app').classList.add('oculto'); $('acceso').classList.remove('oculto'); throw new Error('sin acceso'); }
+  const datos = await r.json();
+  if (!r.ok) throw new Error(datos.detail || 'Error');
+  return datos;
+}
+
+function celda(fila, texto, clase) {
+  const td = document.createElement('td');
+  td.textContent = texto;
+  if (clase) td.className = clase;
+  fila.appendChild(td);
+}
+function tabla(id, columnas, filas, vacio) {
+  const t = $(id);
+  t.replaceChildren();
+  if (!filas.length) { const tr = t.insertRow(); celda(tr, vacio, 'suave'); return; }
+  const cab = t.insertRow();
+  columnas.forEach(c => { const th = document.createElement('th'); th.textContent = c[0]; if (c[2]) th.className = c[2]; cab.appendChild(th); });
+  filas.forEach(f => { const tr = t.insertRow(); columnas.forEach(c => { const v = c[1](f); celda(tr, v[0], [c[2], v[1]].filter(Boolean).join(' ')); }); });
+}
+
+function mostrarFoto(f) {
+  foto = f;
+  const e = $('estado');
+  e.textContent = f.estado.toUpperCase() + (f.motivo_pausa ? ' (' + f.motivo_pausa.replaceAll('_', ' ') + ')' : '');
+  e.className = 'insignia ' + f.estado;
+  $('valor').textContent = pesos(f.valor_total);
+  $('detalle').textContent = 'Efectivo ' + pesos(f.efectivo) + ' · Datos al ' + (f.fecha_datos ? f.fecha_datos.slice(0, 10) : '-');
+  $('b-encender').disabled = f.estado !== 'apagada';
+  $('b-pausar').disabled = f.estado !== 'encendida';
+  $('b-reanudar').disabled = f.estado !== 'pausada';
+  $('b-apagar').disabled = f.estado === 'apagada';
+  $('b-asistido').className = f.modo === 'asistido' ? 'principal' : '';
+  $('b-automatico').className = f.modo === 'automatico' ? 'principal' : '';
+  tabla('posiciones', [
+    ['Empresa', p => [p.ticker]],
+    ['Cantidad', p => [String(p.cantidad)], 'num'],
+    ['Valor', p => [pesos(p.valor) + ' (' + (p.porcentaje * 100).toFixed(1) + '%)'], 'num'],
+    ['Resultado', p => [pct(p.resultado_pct), p.resultado_pct >= 0 ? 'pos' : 'neg'], 'num'],
+    ['Stop', p => [pesos(p.stop)], 'num'],
+    ['Objetivo', p => [pesos(p.objetivo)], 'num'],
+  ], f.posiciones, 'Sin posiciones abiertas.');
+}
+
+async function refrescar() {
+  try {
+    mostrarFoto(await api('GET', '/api/estado'));
+    const props = await api('GET', '/api/propuestas');
+    mostrarPropuestas(props);
+    const ops = await api('GET', '/api/operaciones');
+    tabla('operaciones', [
+      ['Empresa', o => [o.ticker]],
+      ['Modo', o => [o.modo]],
+      ['Puso', o => [pesos(o.monto) + ' (' + (o.porcentaje_cuenta * 100).toFixed(1) + '%)'], 'num'],
+      ['Confianza', o => [Math.round(o.prob_calibrada * 100) + '%'], 'num'],
+      ['Resultado', o => o.resultado_pesos == null ? ['abierta'] : [pesos(o.resultado_pesos) + ' (' + pct(o.resultado_pct) + ')', o.resultado_pesos >= 0 ? 'pos' : 'neg'], 'num'],
+      ['Por qué entró', o => [o.causa || '-']],
+      ['Qué pasó', o => [o.que_paso || '-']],
+      ['Qué no vio', o => [o.que_no_vio || '-']],
+    ], ops, 'Todavía no hubo operaciones.');
+    const ev = await api('GET', '/api/eventos');
+    tabla('eventos', [
+      ['Cuándo', x => [x.fecha.replace('T', ' ').slice(0, 16)]],
+      ['Tipo', x => [x.tipo]],
+      ['Detalle', x => [x.detalle]],
+    ], ev.slice(0, 40), 'Sin actividad todavía.');
+  } catch (e) { /* se reintenta en el próximo ciclo */ }
+}
+
+function mostrarPropuestas(props) {
+  const cont = $('propuestas');
+  const abiertos = new Set([...cont.querySelectorAll('input')].filter(i => i === document.activeElement).map(i => i.dataset.id));
+  if (abiertos.size) return; // no pisar lo que estás escribiendo
+  cont.replaceChildren();
+  if (!props.length) { cont.textContent = 'No hay propuestas pendientes.'; cont.className = 'suave'; return; }
+  cont.className = '';
+  props.forEach(p => {
+    const caja = document.createElement('div');
+    caja.className = 'carta';
+    const t = document.createElement('div'); t.textContent = p.texto; caja.appendChild(t);
+    const v = document.createElement('div'); v.className = 'suave';
+    v.textContent = 'Vence ' + p.vence.replace('T', ' ').slice(0, 16) + ' · Tope de riesgo ' + pesos(p.monto_maximo);
+    caja.appendChild(v);
+    const fila = document.createElement('div'); fila.className = 'fila'; fila.style.marginTop = '8px';
+    const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.step = '1000';
+    inp.value = Math.round(p.monto_sugerido); inp.dataset.id = p.id;
+    const porc = document.createElement('span'); porc.className = 'suave';
+    const actualizar = () => {
+      const m = Number(inp.value) || 0;
+      porc.textContent = '(' + (m / p.valor_cuenta * 100).toFixed(1).replace('.', ',') + '% de tu cuenta)' + (m > p.monto_maximo ? ' · supera el tope de riesgo' : '');
+      porc.className = m > p.monto_maximo ? 'aviso' : 'suave';
+    };
+    inp.addEventListener('input', actualizar); actualizar();
+    const si = document.createElement('button'); si.className = 'principal'; si.textContent = 'Invertir';
+    si.onclick = async () => {
+      try { const r = await api('POST', '/api/propuestas/' + p.id + '/aceptar', { monto: Number(inp.value) });
+            $('mensaje').textContent = r.resultado && r.resultado.aviso ? r.resultado.aviso : ''; }
+      catch (e) { $('mensaje').textContent = e.message; }
+      refrescar();
+    };
+    const no = document.createElement('button'); no.textContent = 'Descartar';
+    no.onclick = async () => { await api('POST', '/api/propuestas/' + p.id + '/rechazar'); refrescar(); };
+    fila.append(inp, porc, si, no); caja.appendChild(fila);
+    cont.appendChild(caja);
+  });
+}
+
+async function boton(nombre, cuerpo) {
+  try { const r = await api('POST', '/api/' + nombre, cuerpo); $('mensaje').textContent = ''; mostrarFoto(r.foto); return r; }
+  catch (e) { $('mensaje').textContent = e.message; }
+}
+function modo(m) { boton('modo', { modo: m }); }
+function reanudar() {
+  if (foto && foto.motivo_pausa === 'caida_desde_pico') {
+    if (!confirm('Se pausó por una caída grande desde el pico. ¿Revisaste el historial y querés reanudar?')) return;
+    return boton('reanudar', { confirmar: true });
+  }
+  boton('reanudar', { confirmar: false });
+}
+async function apagar() {
+  const r = await boton('apagar');
+  if (r && r.resultado && r.resultado.length) $('mensaje').textContent = 'Apagada. Quedan sin vigilancia de stop: ' + r.resultado.join(', ') + '.';
+}
+function cerrarTodo() {
+  if (confirm('¿Vender TODAS las posiciones y apagar IASEYT?')) boton('cerrar-todo', { confirmar: true });
+}
+
+async function mostrarResumen() {
+  const r = await api('GET', '/api/resumen');
+  const s = $('resumen');
+  s.replaceChildren();
+  const h = document.createElement('h2');
+  if (r.primera_visita) { h.textContent = 'Bienvenido a IASEYT'; s.appendChild(h); s.classList.remove('oculto'); return; }
+  h.textContent = 'Desde tu última visita (hace ' + String(r.horas).replace('.', ',') + ' horas)';
+  s.appendChild(h);
+  const p = document.createElement('p');
+  p.textContent = 'Tu cuenta pasó de ' + pesos(r.valor_antes) + ' a ' + pesos(r.valor_ahora) + ': ' + pesos(r.variacion_pesos) + ' (' + pct(r.variacion_pct) + ').';
+  s.appendChild(p);
+  const bloques = [['Compras', r.compras], ['Ventas', r.ventas], ['Frenos activados', r.frenos], ['Oportunidades descartadas (últimas)', r.descartes]];
+  bloques.forEach(([titulo, items]) => {
+    if (!items.length) return;
+    const b = document.createElement('div'); b.className = 'suave'; b.textContent = titulo + ' (' + items.length + ')';
+    const ul = document.createElement('ul');
+    items.slice(-8).forEach(i => { const li = document.createElement('li'); li.textContent = i; ul.appendChild(li); });
+    s.append(b, ul);
+  });
+  if (r.propuestas_pendientes) { const a = document.createElement('p'); a.className = 'aviso'; a.textContent = 'Tenés ' + r.propuestas_pendientes + ' propuesta(s) esperando tu respuesta.'; s.appendChild(a); }
+  s.classList.remove('oculto');
+}
+
+async function iniciar() {
+  try {
+    await mostrarResumen();
+    $('acceso').classList.add('oculto');
+    $('app').classList.remove('oculto');
+    refrescar();
+  } catch (e) { $('acceso').classList.remove('oculto'); }
+}
+guardarTokenDeUrl();
+iniciar();
+setInterval(refrescar, 3000);
+</script>
+</body>
+</html>

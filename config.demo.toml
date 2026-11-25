@@ -1,0 +1,13 @@
+# SOLO PARA DEMOSTRACIÓN con datos sintéticos.
+# Afloja los filtros para que la estrategia de prueba opere y se vea el circuito.
+# Con la configuración normal, IASEYT casi no opera esta estrategia: sus
+# simulaciones muestran demasiado riesgo, y eso es lo que tiene que hacer.
+
+[general]
+ruta_db = "iaseyt-demo.db"
+minutos_para_responder = 10
+
+[filtros]
+prob_minima = 0.55
+min_precedentes = 5
+max_prob_perdida = 0.45

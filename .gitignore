@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.db
+*.db-journal
+config.toml
+.env
+*.csv
+!tests/datos/*.csv
