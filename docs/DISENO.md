@@ -125,7 +125,10 @@ copias de respaldo y repositorio privado.
 
 1. **Base** (esta versión): botones, modos, filtros, topes, Monte Carlo,
    calibración, historial, panel, broker simulado y una estrategia de prueba.
-2. Datos reales y backtest con prueba hacia adelante.
+2. Datos reales y backtest con prueba hacia adelante. Broker: **PPI**, primero
+   en su sandbox. Las órdenes son límite, por el día; si no se ejecutan a tiempo
+   se cancelan, y ante una ejecución parcial o un estado desconocido IASEYT se
+   pausa y pide revisión.
 3. Noticias, SEC y Claude.
 4. Aprendizaje e informes de errores por GitHub.
 5. Simulación completa durante al menos 3 meses.

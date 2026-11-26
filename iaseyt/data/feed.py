@@ -46,6 +46,25 @@ class FeedHistorico:
         self.volumenes = volumenes
         self.sectores = sectores
         self.indice = -1  # todavía no se leyó nada
+        self.inicio = 0  # primera barra que se lee (antes de esa, es historia)
+
+    def ventana(self, inicio: int, fin: int) -> "FeedHistorico":
+        """Copia que empieza a leer en la barra `inicio` y termina antes de `fin`.
+
+        Todo lo anterior a `inicio` queda como historia visible (es pasado).
+        Desde `fin` en adelante no existe: así es imposible mirar el futuro.
+        """
+        if not 0 <= inicio < fin <= len(self.fechas):
+            raise ValueError(f"Ventana inválida: {inicio} a {fin} con {len(self.fechas)} barras.")
+        f = FeedHistorico(
+            self.fechas[:fin],
+            {t: p[:fin] for t, p in self.precios.items()},
+            {t: v[:fin] for t, v in self.volumenes.items()},
+            self.sectores,
+        )
+        f.indice = inicio - 1
+        f.inicio = inicio
+        return f
 
     @property
     def tickers(self) -> list[str]:

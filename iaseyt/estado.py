@@ -26,7 +26,7 @@ class MotivoPausa(str, Enum):
 
 
 # Pausas que exigen que la revises antes de seguir.
-PAUSAS_QUE_REQUIEREN_REVISION = {MotivoPausa.CAIDA_DESDE_PICO}
+PAUSAS_QUE_REQUIEREN_REVISION = {MotivoPausa.CAIDA_DESDE_PICO, MotivoPausa.FALLA_TECNICA}
 
 
 class TransicionInvalida(Exception):
@@ -69,7 +69,7 @@ class ControlEstado:
             raise TransicionInvalida(f"No se puede reanudar: está {self.estado.value}.")
         if self.motivo_pausa in PAUSAS_QUE_REQUIEREN_REVISION and not confirmo_revision:
             raise TransicionInvalida(
-                "Se pausó por una caída grande desde el pico. "
+                f"Se pausó por {self.motivo_pausa.value.replace('_', ' ')}. "
                 "Revisá el historial y confirmá la revisión para reanudar."
             )
         self.estado = Estado.ENCENDIDA

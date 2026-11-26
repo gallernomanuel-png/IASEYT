@@ -29,3 +29,9 @@ caminos_montecarlo = 10000
 [costos]                             # por operación (ida o vuelta)
 comision = 0.005
 deslizamiento = 0.002
+
+[ppi]                                # claves: variables de entorno, nunca acá
+sandbox = true                       # true = entorno de prueba de PPI
+tipo_instrumento = "CEDEARS"
+liquidacion = "A-24HS"
+segundos_espera_orden = 30.0

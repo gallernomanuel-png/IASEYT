@@ -4,6 +4,9 @@ Asistente de inversión con reglas de riesgo estrictas. **Fase 1: todo en
 simulación, con plata de mentira.** Las especificaciones están en
 [docs/DISENO.md](docs/DISENO.md).
 
+> **Fase 2 (en curso):** conexión con PPI en su entorno de prueba, descarga de
+> precios históricos reales y backtest con prueba hacia adelante.
+
 > La estrategia incluida es de prueba: no lee noticias y no hay evidencia de que
 > gane plata. Sirve para probar que el circuito completo funciona.
 
@@ -57,6 +60,56 @@ segundos avanza un día de datos.
 ```bash
 python -m iaseyt simular --csv precios.csv
 ```
+
+**Backtest con prueba hacia adelante** (entrena en un período y prueba en el
+siguiente, que nunca vio; solo cuentan los períodos de prueba):
+
+```bash
+python -m iaseyt backtest                     # con precios sintéticos
+python -m iaseyt backtest --csv precios.csv   # con precios reales
+```
+
+## PPI
+
+IASEYT se conecta a PPI con la librería oficial. **Por defecto usa el sandbox**,
+el entorno de prueba, donde las órdenes no usan plata real. Operar con plata
+real está bloqueado hasta la fase 6.
+
+1. Abrí tu cuenta en PPI y pedí las claves de la API (pública y privada).
+2. Guardá las claves como variables de entorno. **Nunca** en archivos del repo.
+
+   Windows (PowerShell), solo para la ventana actual:
+
+   ```powershell
+   $env:PPI_KEY_PUBLICA = "tu clave pública"
+   $env:PPI_KEY_PRIVADA = "tu clave privada"
+   $env:PPI_CUENTA = "tu número de cuenta comitente"
+   ```
+
+3. Probá la conexión (solo lectura: saldo y un precio):
+
+   ```bash
+   python -m iaseyt ppi-verificar
+   ```
+
+4. Bajá precios históricos reales y corré el backtest con ellos:
+
+   ```bash
+   python -m iaseyt ppi-descargar --produccion --salida precios.csv
+   python -m iaseyt backtest --csv precios.csv
+   ```
+
+   `--produccion` lee del entorno real porque el sandbox puede tener precios de
+   mentira. Solo lee: con `--produccion` IASEYT no puede mandar órdenes.
+
+5. Mandá una orden de prueba al sandbox (compra 1 unidad y la vende):
+
+   ```bash
+   python -m iaseyt ppi-prueba-orden --ticker AAPL
+   ```
+
+   Muestra cada respuesta de PPI. Sirve para confirmar cómo nombra PPI los
+   estados de las órdenes, que su documentación no detalla.
 
 ## Configuración
 

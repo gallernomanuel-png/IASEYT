@@ -27,5 +27,9 @@ IASEYT es el asistente de inversión de Manuel. Antes de cambiar algo, leé
 ## Estado actual
 
 - Fase 1 terminada: núcleo, broker simulado, historial, panel, pruebas.
-- Próximo: fase 2 (datos reales de precios y backtest walk-forward), y conectar
-  el broker elegido (IOL o PPI) en modo prueba.
+- Fase 2 en curso. Broker elegido: **PPI** (tiene sandbox y claves de API).
+  Hecho: `iaseyt/broker/ppi.py` (solo sandbox), descarga de históricos,
+  backtest walk-forward (`iaseyt/backtest.py`).
+- Pendiente de fase 2: confirmar en el sandbox los textos de estado de las
+  órdenes (`estado_orden`), el formato del saldo y las órdenes de stop.
+- Operar con plata real está bloqueado en `BrokerPPI` hasta la fase 6.

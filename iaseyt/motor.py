@@ -221,7 +221,11 @@ class Motor:
     def _comprar(self, ev: Evaluacion, monto: float, modo: Modo, monto_propuesto: float) -> None:
         s = ev.senal
         ahora = self.reloj()
-        ej = self.broker.comprar(s.ticker, monto, ahora)
+        try:
+            ej = self.broker.comprar(s.ticker, monto, ahora)
+        except Exception as e:
+            self._falla_broker(f"No se pudo comprar {s.ticker}: {e}")
+            return
         if ej is None:
             self.historial.evento(ahora, "descarte", f"{s.ticker}: el monto no alcanza para una unidad.")
             return
@@ -248,10 +252,23 @@ class Motor:
             {"operacion": id_op},
         )
 
+    def _falla_broker(self, detalle: str) -> None:
+        """Ante cualquier error del broker: pausa y avisa. Nunca sigue operando a ciegas."""
+        self.historial.evento(self.reloj(), "falla", detalle)
+        if self.control.estado != Estado.APAGADA:
+            self.control.pausar(MotivoPausa.FALLA_TECNICA)
+            self._registrar_estado("Pausada por una falla del broker. Revisá antes de reanudar.")
+
     def _vender(self, ticker: str, motivo: str) -> None:
-        pos = self.cartera.posiciones.pop(ticker)
+        pos = self.cartera.posiciones[ticker]
         ahora = self.reloj()
-        ej = self.broker.vender(ticker, pos.cantidad, ahora)
+        try:
+            ej = self.broker.vender(ticker, pos.cantidad, ahora)
+        except Exception as e:
+            # La posición sigue registrada: se reintenta en el próximo ciclo.
+            self._falla_broker(f"No se pudo vender {ticker} ({motivo}): {e}")
+            return
+        del self.cartera.posiciones[ticker]
         self.cartera.efectivo = self.broker.efectivo()
         costo = pos.costo_total or pos.cantidad * pos.precio_entrada
         resultado = ej.monto - ej.comision - costo

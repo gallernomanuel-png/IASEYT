@@ -241,8 +241,8 @@ async function boton(nombre, cuerpo) {
 }
 function modo(m) { boton('modo', { modo: m }); }
 function reanudar() {
-  if (foto && foto.motivo_pausa === 'caida_desde_pico') {
-    if (!confirm('Se pausó por una caída grande desde el pico. ¿Revisaste el historial y querés reanudar?')) return;
+  if (foto && ['caida_desde_pico', 'falla_tecnica'].includes(foto.motivo_pausa)) {
+    if (!confirm('Se pausó por ' + foto.motivo_pausa.replace('_', ' ') + '. ¿Revisaste el historial y querés reanudar?')) return;
     return boton('reanudar', { confirmar: true });
   }
   boton('reanudar', { confirmar: false });

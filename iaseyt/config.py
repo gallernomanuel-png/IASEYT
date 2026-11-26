@@ -50,10 +50,24 @@ class Costos:
 
 
 @dataclass(frozen=True)
+class ConfigPPI:
+    """Conexión con PPI. Las claves NO van acá: van en variables de entorno
+    (PPI_KEY_PUBLICA, PPI_KEY_PRIVADA y PPI_CUENTA)."""
+
+    sandbox: bool = True
+    tipo_instrumento: str = "CEDEARS"
+    # Los CEDEARs se liquidan a 24 horas (T+1).
+    liquidacion: str = "A-24HS"
+    # Cuánto espera a que se ejecute una orden límite antes de cancelarla.
+    segundos_espera_orden: float = 30.0
+
+
+@dataclass(frozen=True)
 class Config:
     limites: LimitesRiesgo = field(default_factory=LimitesRiesgo)
     filtros: FiltrosDecision = field(default_factory=FiltrosDecision)
     costos: Costos = field(default_factory=Costos)
+    ppi: ConfigPPI = field(default_factory=ConfigPPI)
     capital_inicial: float = 1_000_000.0
     ruta_db: str = "iaseyt.db"
     # Modo asistido: minutos para responder una propuesta antes de descartarla.
@@ -85,6 +99,7 @@ def cargar_config(ruta: str | Path | None = None) -> Config:
         limites=_construir(LimitesRiesgo, datos.pop("limites", None)),
         filtros=_construir(FiltrosDecision, datos.pop("filtros", None)),
         costos=_construir(Costos, datos.pop("costos", None)),
+        ppi=_construir(ConfigPPI, datos.pop("ppi", None)),
     )
     general = datos.pop("general", {})
     if datos:

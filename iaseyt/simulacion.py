@@ -53,14 +53,25 @@ class Informe:
         )
 
 
-def correr(feed: FeedHistorico, cfg: Config, semilla: int = 0, historial: Historial | None = None) -> tuple[Motor, Informe]:
+def correr(
+    feed: FeedHistorico,
+    cfg: Config,
+    semilla: int = 0,
+    historial: Historial | None = None,
+    estrategia=None,
+    calibracion_previa: list[tuple[float, bool]] | None = None,
+) -> tuple[Motor, Informe]:
+    """Corre el motor en automático desde donde esté el feed hasta el final."""
     historial = historial or Historial(":memory:")
+    for prob, acerto in calibracion_previa or []:
+        historial.guardar_calibracion(prob, acerto)
+    inicio = feed.indice + 1
     broker = BrokerSimulado(cfg.capital_inicial, cfg.costos.comision, cfg.costos.deslizamiento)
 
     def reloj() -> datetime:
-        return feed.fecha_actual or feed.fechas[0]
+        return feed.fecha_actual or feed.fechas[inicio]
 
-    motor = Motor(cfg, broker, feed, EstrategiaCaidaFuerte(), historial, reloj=reloj, rng=np.random.default_rng(semilla))
+    motor = Motor(cfg, broker, feed, estrategia or EstrategiaCaidaFuerte(), historial, reloj=reloj, rng=np.random.default_rng(semilla))
     motor.cambiar_modo(Modo.AUTOMATICO)
     motor.encender()
     while not feed.terminado:
@@ -79,9 +90,7 @@ def correr(feed: FeedHistorico, cfg: Config, semilla: int = 0, historial: Histor
     res = [o["resultado_pct"] for o in cerradas]
     ganadas = [r for r in res if r > 0]
     perdidas = [r for r in res if r <= 0]
-    inicio = {t: feed.precios[t][0] for t in feed.tickers}
-    fin = {t: feed.precios[t][-1] for t in feed.tickers}
-    byh = float(np.mean([fin[t] / inicio[t] - 1 for t in feed.tickers]))
+    byh = float(np.mean([feed.precios[t][-1] / feed.precios[t][inicio] - 1 for t in feed.tickers]))
     final = motor.cartera.valor_total
     informe = Informe(
         valor_inicial=cfg.capital_inicial,
